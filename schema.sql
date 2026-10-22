@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY,
     customer TEXT NOT NULL,
+    placed_at TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'open'
 );
 

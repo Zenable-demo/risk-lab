@@ -27,11 +27,12 @@ class OrderRepository:
         self.connection = connection
 
     def add_order(self, customer: str, placed_at: str, items: list[Item]) -> int:
-        cursor = self.connection.execute(
-            "INSERT INTO orders (customer, placed_at) VALUES (?, ?)",
-            (customer, placed_at),
-        )
+        cursor = self.connection.execute("INSERT INTO orders (customer) VALUES (?)", (customer,))
         order_id = cursor.lastrowid
+        self.connection.execute(
+            "INSERT INTO order_placements (order_id, placed_at) VALUES (?, ?)",
+            (order_id, placed_at),
+        )
         self.connection.executemany(
             "INSERT INTO order_items (order_id, sku, quantity) VALUES (?, ?, ?)",
             [(order_id, item.sku, item.quantity) for item in items],
@@ -59,7 +60,9 @@ class OrderRepository:
     def list_orders(self, page: int = 0) -> list[Order]:
         """One page of orders, each with its items attached."""
         rows = self.connection.execute(
-            "SELECT id, customer, placed_at, status FROM orders ORDER BY id LIMIT ? OFFSET ?",
+            "SELECT orders.id, orders.customer, order_placements.placed_at, orders.status "
+            "FROM orders JOIN order_placements ON order_placements.order_id = orders.id "
+            "ORDER BY orders.id LIMIT ? OFFSET ?",
             (settings.page_size, page * settings.page_size),
         ).fetchall()
         orders = []
